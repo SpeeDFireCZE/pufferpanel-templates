@@ -75,10 +75,7 @@
     "image": "steamcmd/steamcmd",
     "networkMode": "host",
     "networkName": "",
-    "portBindings": [
-      "0.0.0.0:8211:8211/tcp",
-      "0.0.0.0:8211:8211/udp"
-    ],
+    "portBindings": [],
     "type": "docker"
   },
   "supportedEnvironments": [
@@ -87,10 +84,7 @@
       "image": "steamcmd/steamcmd",
       "networkMode": "host",
       "networkName": "",
-      "portBindings": [
-        "0.0.0.0:8211:8211/tcp",
-        "0.0.0.0:8211:8211/udp"
-      ],
+      "portBindings": [],
       "type": "docker"
     }
   ],
