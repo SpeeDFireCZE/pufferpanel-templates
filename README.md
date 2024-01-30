@@ -1,1 +1,1 @@
-unoficial pufferpanel Jsons (templates)
+unofficial pufferpanel Jsons (templates)
