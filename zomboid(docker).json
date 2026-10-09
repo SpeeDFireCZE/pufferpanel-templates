@@ -1,0 +1,159 @@
+{
+    "type": "zomboid",
+    "display": "Project Zomboid (Docker2)",
+    "data": {
+        "adminPassword": {
+            "type": "string",
+            "value": "changeme",
+            "display": "Admin heslo",
+            "desc": "Heslo účtu admin. Uplatní se jen při prvním vytvoření databáze serveru. Bez mezer.",
+            "required": true,
+            "userEdit": true
+        },
+        "memory": {
+            "type": "integer",
+            "value": 4096,
+            "display": "Paměť (MB)",
+            "desc": "Java heap (-Xmx).",
+            "required": true,
+            "userEdit": true
+        },
+        "mods": {
+            "type": "string",
+            "value": "",
+            "display": "Mod ID",
+            "desc": "Mod ID oddělená středníkem, např. ModA;ModB (řádek Mods= v .ini).",
+            "required": false,
+            "userEdit": true
+        },
+        "port": {
+            "type": "integer",
+            "value": 16261,
+            "display": "Port (UDP)",
+            "desc": "Hlavní herní port (DefaultPort), UDP.",
+            "required": true,
+            "userEdit": true
+        },
+        "serverName": {
+            "type": "string",
+            "value": "pufferserver",
+            "display": "Název serveru",
+            "desc": "Interní název serveru (název .ini a savu). Bez mezer.",
+            "required": true,
+            "userEdit": true
+        },
+        "serverPassword": {
+            "type": "string",
+            "value": "",
+            "display": "Heslo serveru",
+            "desc": "Heslo pro připojení hráčů. Prázdné = bez hesla.",
+            "required": false,
+            "userEdit": true
+        },
+        "steamVAC": {
+            "type": "boolean",
+            "value": true,
+            "display": "Steam VAC",
+            "desc": "Zapnout/vypnout Steam VAC.",
+            "required": true,
+            "userEdit": true
+        },
+        "udpPort": {
+            "type": "integer",
+            "value": 16262,
+            "display": "Direct connect port (UDP)",
+            "desc": "Druhý port (UDPPort), obvykle port + 1.",
+            "required": true,
+            "userEdit": true
+        },
+        "workshopItems": {
+            "type": "string",
+            "value": "",
+            "display": "Workshop ID",
+            "desc": "Číselná Steam Workshop ID oddělená středníkem, např. 2169435993;2392709985 (řádek WorkshopItems= v .ini).",
+            "required": false,
+            "userEdit": true
+        }
+    },
+    "install": [
+        {
+            "type": "command",
+            "commands": [
+                "steamcmd +force_install_dir /pufferpanel +login anonymous +app_update 380870 validate +quit"
+            ]
+        },
+        {
+            "type": "writefile",
+            "text": "{ \"mainClass\": \"zombie/network/GameServer\", \"classpath\": [ \"java/.\", \"java/projectzomboid.jar\" ], \"vmArgs\": [ \"-Djava.awt.headless=true\", \"-Xmx${memory}M\", \"-Dzomboid.steam=1\", \"-Dzomboid.znetlog=1\", \"-Djava.library.path=linux64/\", \"-Djava.security.egd=file:/dev/urandom\", \"-XX:+UseZGC\", \"-XX:-OmitStackTraceInFastThrow\"] }",
+            "target": "ProjectZomboid64.json"
+        },
+        {
+            "type": "writefile",
+            "text": "#!/bin/bash\nset -e\nINI=\"/pufferpanel/Zomboid/Server/$1.ini\"\nmkdir -p \"$(dirname \"$INI\")\"\ntouch \"$INI\"\ngrep -vE '^(Password|Mods|WorkshopItems)=' \"$INI\" > \"$INI.tmp\" || true\ncat /pufferpanel/pz-overrides.txt >> \"$INI.tmp\"\nmv \"$INI.tmp\" \"$INI\"\n",
+            "target": "pz-merge.sh"
+        },
+        {
+            "type": "command",
+            "commands": [
+                "chmod +x start-server.sh pz-merge.sh"
+            ]
+        }
+    ],
+    "uninstall": null,
+    "run": {
+        "command": "./start-server.sh -cachedir=/pufferpanel/Zomboid -servername ${serverName} -adminpassword ${adminPassword} -port ${port} -udpport ${udpPort} -steamvac ${steamVAC}",
+        "stop": "quit",
+        "pre": [
+            {
+                "type": "writefile",
+                "target": "pz-overrides.txt",
+                "text": "Password=${serverPassword}\nMods=${mods}\nWorkshopItems=${workshopItems}\n"
+            },
+            {
+                "type": "command",
+                "commands": [
+                    "bash /pufferpanel/pz-merge.sh ${serverName}"
+                ]
+            }
+        ],
+        "stdin": {
+            "type": "stdin"
+        },
+        "autostart": false,
+        "autorecover": false,
+        "autorestart": false
+    },
+    "environment": {
+        "type": "docker",
+        "image": "steamcmd/steamcmd",
+        "portBindings": [
+            "0.0.0.0:${port}:${port}/udp",
+            "0.0.0.0:${udpPort}:${udpPort}/udp"
+        ]
+    },
+    "supportedEnvironments": [
+        {
+            "type": "docker",
+            "image": "steamcmd/steamcmd",
+            "portBindings": [
+                "0.0.0.0:${port}:${port}/udp",
+                "0.0.0.0:${udpPort}:${udpPort}/udp"
+            ]
+        }
+    ],
+    "requirements": {
+        "os": "linux",
+        "arch": "amd64"
+    },
+    "stats": {
+        "type": ""
+    },
+    "query": {
+        "type": ""
+    },
+    "keepAlive": {
+        "frequency": "",
+        "command": ""
+    },
+    "name": "Zomboid-docker2"
+}
