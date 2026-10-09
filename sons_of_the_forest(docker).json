@@ -1,0 +1,207 @@
+{
+    "type": "sonsoftheforest",
+    "display": "Sons of the Forest (Docker)",
+    "data": {
+        "autoUpdate": {
+            "type": "boolean",
+            "value": true,
+            "display": "Update on start",
+            "desc": "Runs steamcmd app_update 2465200 before every start.",
+            "required": true,
+            "userEdit": true
+        },
+        "blobSyncPort": {
+            "type": "integer",
+            "value": 9700,
+            "display": "BlobSync port (UDP)",
+            "desc": "BlobSyncPort.",
+            "required": true,
+            "userEdit": true
+        },
+        "gameMode": {
+            "type": "string",
+            "value": "Normal",
+            "display": "Game mode",
+            "desc": "GameMode. Only applies to a new save; ignored when loading an existing one.",
+            "required": true,
+            "userEdit": true,
+            "options": [
+                {
+                    "value": "Normal",
+                    "display": "Normal"
+                },
+                {
+                    "value": "Hard",
+                    "display": "Hard"
+                },
+                {
+                    "value": "HardSurvival",
+                    "display": "HardSurvival"
+                },
+                {
+                    "value": "Peaceful",
+                    "display": "Peaceful"
+                },
+                {
+                    "value": "Creative",
+                    "display": "Creative"
+                },
+                {
+                    "value": "Custom",
+                    "display": "Custom"
+                }
+            ]
+        },
+        "gamePort": {
+            "type": "integer",
+            "value": 8766,
+            "display": "Game port (UDP)",
+            "desc": "GamePort.",
+            "required": true,
+            "userEdit": true
+        },
+        "maxPlayers": {
+            "type": "integer",
+            "value": 8,
+            "display": "Max players",
+            "desc": "MaxPlayers (1-8).",
+            "required": true,
+            "userEdit": true
+        },
+        "owners": {
+            "type": "string",
+            "value": "",
+            "display": "Admins (SteamID64)",
+            "desc": "Comma-separated 17-digit SteamID64s written to ownerswhitelist.txt. Empty = file is left unchanged.",
+            "required": false,
+            "userEdit": true
+        },
+        "password": {
+            "type": "string",
+            "value": "",
+            "display": "Server password",
+            "desc": "Password (max 40 characters). Empty = no password. No double quotes.",
+            "required": false,
+            "userEdit": true
+        },
+        "queryPort": {
+            "type": "integer",
+            "value": 27016,
+            "display": "Query port (UDP)",
+            "desc": "QueryPort - Steam server list.",
+            "required": true,
+            "userEdit": true
+        },
+        "saveInterval": {
+            "type": "integer",
+            "value": 300,
+            "display": "Save interval (s)",
+            "desc": "SaveInterval in seconds (game default is 600).",
+            "required": true,
+            "userEdit": true
+        },
+        "saveSlot": {
+            "type": "integer",
+            "value": 1,
+            "display": "Save slot",
+            "desc": "SaveSlot.",
+            "required": true,
+            "userEdit": true
+        },
+        "serverName": {
+            "type": "string",
+            "value": "PufferPanel SotF",
+            "display": "Server name",
+            "desc": "ServerName (max 60 characters). No double quotes.",
+            "required": true,
+            "userEdit": true
+        },
+        "skipNetTest": {
+            "type": "boolean",
+            "value": false,
+            "display": "Skip network test",
+            "desc": "SkipNetworkAccessibilityTest - enable if the server reports unreachable ports on startup.",
+            "required": true,
+            "userEdit": true
+        }
+    },
+    "install": [
+        {
+            "type": "writefile",
+            "text": "#!/bin/bash\n# Download/update the Windows build of the SotF DS (app 2465200) using Linux steamcmd stored in /pufferpanel/steamcmd\nset -e\nexport HOME=/pufferpanel\nSC=/pufferpanel/steamcmd\nif [ ! -x \"$SC/steamcmd.sh\" ]; then\n  echo \"[pufferpanel] Installing steamcmd...\"\n  mkdir -p \"$SC\"\n  curl -fsSL https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz | tar -xz -C \"$SC\"\nfi\n\"$SC/steamcmd.sh\" +@sSteamCmdForcePlatformType windows +force_install_dir /pufferpanel +login anonymous +app_update 2465200 \"$@\" +quit\n",
+            "target": "sotf-steam.sh"
+        },
+        {
+            "type": "writefile",
+            "text": "#!/bin/bash\n# One-time setup of the Wine prefix in persistent /pufferpanel/.wine\nexport HOME=/pufferpanel\nexport WINEPREFIX=/pufferpanel/.wine WINEARCH=win64 WINEDEBUG=-all WINEDLLOVERRIDES=\"mscoree,mshtml=\"\nrm -f /tmp/.X99-lock\nXvfb :99 -screen 0 1024x768x16 -nolisten tcp >/dev/null 2>&1 &\nXPID=$!\nexport DISPLAY=:99\nsleep 2\necho \"[pufferpanel] Initializing Wine prefix...\"\nwineboot --init\nwineserver -w\necho \"[pufferpanel] Installing Visual C++ 2019 runtime (winetricks vcrun2019)...\"\nwinetricks -q vcrun2019 || echo \"[pufferpanel] WARNING: failed to install vcrun2019\"\nwineserver -w\nkill $XPID 2>/dev/null\nexit 0\n",
+            "target": "sotf-wine.sh"
+        },
+        {
+            "type": "command",
+            "commands": [
+                "bash /pufferpanel/sotf-steam.sh validate",
+                "bash /pufferpanel/sotf-wine.sh"
+            ]
+        }
+    ],
+    "uninstall": null,
+    "run": {
+        "command": "bash /pufferpanel/sotf-start.sh",
+        "stopCode": 2,
+        "pre": [
+            {
+                "if": "autoUpdate",
+                "type": "command",
+                "commands": [
+                    "bash /pufferpanel/sotf-steam.sh"
+                ]
+            },
+            {
+                "type": "writefile",
+                "text": "#!/bin/bash\ncd /pufferpanel\nexport HOME=/pufferpanel\nexport WINEPREFIX=/pufferpanel/.wine WINEARCH=win64 WINEDEBUG=-all WINEDLLOVERRIDES=\"mscoree,mshtml=\"\n\n# Virtual display for Wine\nrm -f /tmp/.X99-lock\nXvfb :99 -screen 0 1024x768x16 -nolisten tcp >/dev/null 2>&1 &\nexport DISPLAY=:99\nsleep 2\n\nif [ ! -d \"$WINEPREFIX\" ]; then\n  echo \"[pufferpanel] Wine prefix missing, initializing...\"\n  wineboot --init\n  wineserver -w\nfi\n\nUD=/pufferpanel/userdata\nmkdir -p \"$UD\"\n\n# Admins: comma-separated SteamID64s -> ownerswhitelist.txt (only when the variable is set)\nif [ -n \"${owners}\" ]; then\n  printf '%s\\n' \"${owners}\" | tr ',; ' '\\n\\n\\n' | grep -E '^[0-9]{17}$' > \"$UD/ownerswhitelist.txt\"\nfi\n\nset -- -userdatapath \"$UD\" \\\n  -dedicatedserver.IpAddress 0.0.0.0 \\\n  -dedicatedserver.GamePort ${gamePort} \\\n  -dedicatedserver.QueryPort ${queryPort} \\\n  -dedicatedserver.BlobSyncPort ${blobSyncPort} \\\n  -dedicatedserver.ServerName \"${serverName}\" \\\n  -dedicatedserver.MaxPlayers ${maxPlayers} \\\n  -dedicatedserver.Password \"${password}\" \\\n  -dedicatedserver.GameMode ${gameMode} \\\n  -dedicatedserver.SaveSlot ${saveSlot} \\\n  -dedicatedserver.SaveInterval ${saveInterval} \\\n  -dedicatedserver.SkipNetworkAccessibilityTest ${skipNetTest}\n\n# This script runs as PID 1 in the container, which ignores signals without a handler.\n# Trap the stop signal, forward it to the server and fall back to killing Wine.\nstop_server() {\n  echo \"[pufferpanel] Stopping server...\"\n  kill -INT \"$WPID\" 2>/dev/null\n  for i in $(seq 1 30); do\n    kill -0 \"$WPID\" 2>/dev/null || break\n    sleep 1\n  done\n  if kill -0 \"$WPID\" 2>/dev/null; then\n    echo \"[pufferpanel] Server did not exit in 30 s, killing Wine\"\n  fi\n  wineserver -k 2>/dev/null\n}\ntrap stop_server INT TERM\n\n# Job control on: without it bash starts background jobs with SIGINT ignored,\n# so the forwarded signal would never reach the server.\nset -m\nwine ./SonsOfTheForestDS.exe \"$@\" <&0 &\nWPID=$!\nwait \"$WPID\"\nwait \"$WPID\" 2>/dev/null\nwineserver -k 2>/dev/null\nexit 0\n",
+                "target": "sotf-start.sh"
+            }
+        ],
+        "stdin": {
+            "type": "stdin"
+        },
+        "autostart": false,
+        "autorecover": false,
+        "autorestart": false
+    },
+    "environment": {
+        "type": "docker",
+        "image": "ghcr.io/ptero-eggs/yolks:wine_latest",
+        "portBindings": [
+            "0.0.0.0:${gamePort}:${gamePort}/udp",
+            "0.0.0.0:${queryPort}:${queryPort}/udp",
+            "0.0.0.0:${blobSyncPort}:${blobSyncPort}/udp"
+        ]
+    },
+    "supportedEnvironments": [
+        {
+            "type": "docker",
+            "image": "ghcr.io/ptero-eggs/yolks:wine_latest",
+            "portBindings": [
+                "0.0.0.0:${gamePort}:${gamePort}/udp",
+                "0.0.0.0:${queryPort}:${queryPort}/udp",
+                "0.0.0.0:${blobSyncPort}:${blobSyncPort}/udp"
+            ]
+        }
+    ],
+    "requirements": {
+        "os": "linux",
+        "arch": "amd64"
+    },
+    "stats": {
+        "type": ""
+    },
+    "query": {
+        "type": ""
+    },
+    "keepAlive": {
+        "frequency": "",
+        "command": ""
+    },
+    "name": "sons of the forest docker"
+}
