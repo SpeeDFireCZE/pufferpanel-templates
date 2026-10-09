@@ -1,115 +1,191 @@
 {
-  "name": "cs2-docker",
-  "display": "Counter Strike 2 (Docker)",
-  "type": "srcds",
-  "install": [
-    {
-      "commands": [
-        "steamcmd +force_install_dir /pufferpanel +login anonymous +app_update 730 +quit"
-      ],
-      "type": "command"
+    "type": "cs2",
+    "display": "Counter-Strike 2 (Docker2)",
+    "data": {
+        "autoUpdate": {
+            "type": "boolean",
+            "value": true,
+            "display": "Aktualizovat při startu",
+            "desc": "Před každým startem spustí steamcmd app_update 730. Neaktuální server odmítá klienty.",
+            "required": true,
+            "userEdit": true
+        },
+        "defaultMap": {
+            "type": "string",
+            "value": "de_dust2",
+            "display": "Výchozí mapa",
+            "desc": "Mapa po startu, pokud není nastavena Workshop kolekce.",
+            "required": true,
+            "userEdit": true
+        },
+        "gameMode": {
+            "type": "integer",
+            "value": 1,
+            "display": "game_mode",
+            "desc": "game_type 0: 0 = Casual, 1 = Competitive, 2 = Wingman | game_type 1: 0 = Arms Race, 2 = Deathmatch | game_type 3: 0 = Custom",
+            "required": true,
+            "userEdit": true
+        },
+        "gameType": {
+            "type": "integer",
+            "value": 0,
+            "display": "game_type",
+            "desc": "0 = Classic, 1 = Gun Game / Deathmatch, 3 = Custom (pravidla v game/csgo/cfg/gamemode_custom_server.cfg)",
+            "required": true,
+            "userEdit": true
+        },
+        "gslt": {
+            "type": "string",
+            "value": "",
+            "display": "GSLT token",
+            "desc": "Game Server Login Token (steamcommunity.com/dev/managegameservers, App ID 730). Bez něj nebude server veřejně dostupný.",
+            "required": false,
+            "userEdit": true
+        },
+        "hostname": {
+            "type": "string",
+            "value": "PufferPanel CS2",
+            "display": "Název serveru",
+            "desc": "hostname zobrazený v prohlížeči serverů. Bez uvozovek.",
+            "required": true,
+            "userEdit": true
+        },
+        "ip": {
+            "type": "string",
+            "value": "0.0.0.0",
+            "display": "IP",
+            "desc": "IP adresa hostitele, na které bude server poslouchat (Docker port binding). 0.0.0.0 = všechna rozhraní.",
+            "required": true,
+            "userEdit": true
+        },
+        "mapGroup": {
+            "type": "string",
+            "value": "mg_active",
+            "display": "Map group",
+            "desc": "+mapgroup, např. mg_active, mg_deathmatch, mg_armsrace. Výchozí mapa musí být v této skupině. Prázdné = nepoužít. Ignoruje se při Workshop kolekci.",
+            "required": false,
+            "userEdit": true
+        },
+        "maxPlayers": {
+            "type": "integer",
+            "value": 10,
+            "display": "Max hráčů",
+            "desc": "-maxplayers",
+            "required": true,
+            "userEdit": true
+        },
+        "metamod": {
+            "type": "boolean",
+            "value": false,
+            "display": "Metamod:Source",
+            "desc": "Při každém startu doplní do gameinfo.gi cestu csgo/addons/metamod. Metamod (a CounterStrikeSharp) nahraj do game/csgo/addons ručně.",
+            "required": true,
+            "userEdit": true
+        },
+        "port": {
+            "type": "integer",
+            "value": 27015,
+            "display": "Port",
+            "desc": "Herní port (UDP) a RCON (TCP).",
+            "required": true,
+            "userEdit": true
+        },
+        "rconPassword": {
+            "type": "string",
+            "value": "changeme",
+            "display": "Admin (RCON) heslo",
+            "desc": "rcon_password. CS2 nemá vestavěný admin účet, administrace jde přes RCON. Bez uvozovek.",
+            "required": true,
+            "userEdit": true
+        },
+        "serverPassword": {
+            "type": "string",
+            "value": "",
+            "display": "Heslo serveru",
+            "desc": "sv_password. Prázdné = bez hesla. Bez uvozovek.",
+            "required": false,
+            "userEdit": true
+        },
+        "workshopCollection": {
+            "type": "string",
+            "value": "",
+            "display": "Workshop kolekce",
+            "desc": "ID Steam Workshop kolekce map (host_workshop_collection). Když je vyplněno, ignoruje se Výchozí mapa.",
+            "required": false,
+            "userEdit": true
+        }
     },
-    {
-      "type": "mkdir",
-      "target": "./.steam/sdk64/"
+    "install": [
+        {
+            "type": "command",
+            "commands": [
+                "steamcmd +force_install_dir /pufferpanel +login anonymous +app_update 730 validate +quit",
+                "steamcmd +force_install_dir /pufferpanel/steamworks +login anonymous +app_update 1007 +quit"
+            ]
+        }
+    ],
+    "uninstall": null,
+    "run": {
+        "command": "bash /pufferpanel/cs2-start.sh",
+        "stop": "quit",
+        "pre": [
+            {
+                "if": "autoUpdate",
+                "type": "command",
+                "commands": [
+                    "steamcmd +force_install_dir /pufferpanel +login anonymous +app_update 730 +quit",
+                    "steamcmd +force_install_dir /pufferpanel/steamworks +login anonymous +app_update 1007 +quit"
+                ]
+            },
+            {
+                "type": "writefile",
+                "text": "hostname \"${hostname}\"\nsv_password \"${serverPassword}\"\nrcon_password \"${rconPassword}\"\n",
+                "target": "game/csgo/cfg/pufferpanel.cfg"
+            },
+            {
+                "type": "writefile",
+                "target": "cs2-start.sh",
+                "text": "#!/bin/bash\ncd /pufferpanel\nexport HOME=/pufferpanel\n# libserver.so (game/csgo/bin) potřebuje libv8*.so z game/bin -> obojí do cesty knihoven\nexport LD_LIBRARY_PATH=\"/pufferpanel/game/bin/linuxsteamrt64:/pufferpanel/game/csgo/bin/linuxsteamrt64:$LD_LIBRARY_PATH\"\n\n# steamclient.so musí být v ~/.steam/sdk64 (jinak \"Failed to load steamclient.so\")\n# Zdroj: Steamworks SDK Redist (app 1007) v perzistentním /pufferpanel/steamworks\nSDK=/pufferpanel/.steam/sdk64\nSW=/pufferpanel/steamworks/linux64/steamclient.so\nif [ ! -f \"$SW\" ]; then\n  echo \"[pufferpanel] Stahuji Steamworks SDK Redist (app 1007)...\"\n  steamcmd +force_install_dir /pufferpanel/steamworks +login anonymous +app_update 1007 +quit\nfi\nif [ -f \"$SW\" ]; then\n  [ -L \"$SDK\" ] && rm -f \"$SDK\"\n  mkdir -p \"$SDK\"\n  cp -f \"$SW\" \"$SDK/steamclient.so\"\nelse\n  echo \"[pufferpanel] CHYBA: $SW chybi, server se nespusti\"\nfi\n\n# Metamod: update hry gameinfo.gi přepisuje, proto se patchuje při každém startu\nGI=/pufferpanel/game/csgo/gameinfo.gi\nif [ \"${metamod}\" = \"true\" ] && [ -f \"$GI\" ] && ! grep -q 'csgo/addons/metamod' \"$GI\"; then\n  sed -i 's|^\\(\\s*\\)Game_LowViolence\\(\\s*\\)csgo_lv.*$|&\\n\\1Game\\2csgo/addons/metamod|' \"$GI\"\nfi\n\n# server.cfg se spouští při každém načtení mapy -> na konec přidat exec našeho cfg\nCFG=/pufferpanel/game/csgo/cfg/server.cfg\ntouch \"$CFG\"\ngrep -q '^exec pufferpanel' \"$CFG\" || printf '\\nexec pufferpanel\\n' >> \"$CFG\"\n\nset -- -dedicated -usercon -port ${port} -maxplayers ${maxPlayers} +game_type ${gameType} +game_mode ${gameMode} +exec pufferpanel.cfg\nif [ -n \"${gslt}\" ]; then\n  set -- \"$@\" +sv_setsteamaccount \"${gslt}\"\nfi\nif [ -n \"${workshopCollection}\" ]; then\n  set -- \"$@\" +host_workshop_collection \"${workshopCollection}\"\nelse\n  if [ -n \"${mapGroup}\" ]; then\n    set -- \"$@\" +mapgroup \"${mapGroup}\"\n  fi\n  set -- \"$@\" +map \"${defaultMap}\"\nfi\n\nexec ./game/bin/linuxsteamrt64/cs2 \"$@\"\n"
+            }
+        ],
+        "stdin": {
+            "type": "stdin"
+        },
+        "autostart": false,
+        "autorecover": false,
+        "autorestart": false
     },
-    {
-      "type": "move",
-      "source": "/.steam/steamcmd/linux64/steamclient.so",
-      "target": "./.steam/sdk64/"
-    }
-  ],
-  "run": {
-    "stop": "quit",
-    "command": "./game/bin/linuxsteamrt64/cs2 -dedicated -usercon -strictportbind -ip ${ip} -port ${port} +clientport ${clientport} +tv_port ${tvport} +map ${map} -maxplayers_override ${maxplayers} +sv_setsteamaccount ${gslt} -tickrate ${tickrate} +mapgroup ${mapgroup} +game_mode ${gamemode} +game_type ${gametype} -net_port_try 1 -norestart",
-    "workingDirectory": "",
-    "pre": [],
-    "post": [],
-    "environmentVars": {}
-  },
-  "data": {
-    "clientport": {
-      "type": "integer",
-      "desc": "What port to bind the clientport to",
-      "display": "Client Port",
-      "required": true,
-      "value": "27016"
+    "environment": {
+        "type": "docker",
+        "image": "steamcmd/steamcmd",
+        "portBindings": [
+            "${ip}:${port}:${port}/udp",
+            "${ip}:${port}:${port}/tcp"
+        ]
     },
-    "gamemode": {
-      "type": "integer",
-      "desc": "(Advanced) Gamemode",
-      "display": "Gamemode",
-      "required": true,
-      "value": "0"
+    "supportedEnvironments": [
+        {
+            "type": "docker",
+            "image": "steamcmd/steamcmd",
+            "portBindings": [
+                "${ip}:${port}:${port}/udp",
+                "${ip}:${port}:${port}/tcp"
+            ]
+        }
+    ],
+    "requirements": {
+        "os": "linux",
+        "arch": "amd64"
     },
-    "gametype": {
-      "type": "integer",
-      "desc": "(Advanced) Gametype",
-      "display": "Gametype",
-      "required": true,
-      "value": "0"
+    "stats": {
+        "type": ""
     },
-    "gslt": {
-      "type": "string",
-      "desc": "It is required to register your server, otherwise it can only be played on LAN. Visit http://steamcommunity.com/dev/managegameservers to get a token",
-      "display": "GSLT Token",
-      "required": true,
-      "value": "GSLTTOKEN"
+    "query": {
+        "type": ""
     },
-    "ip": {
-      "type": "string",
-      "desc": "What IP to bind the server to",
-      "display": "IP",
-      "required": true,
-      "value": "0.0.0.0"
+    "keepAlive": {
+        "frequency": "",
+        "command": ""
     },
-    "map": {
-      "type": "string",
-      "desc": "Map to load by default",
-      "display": "Map",
-      "required": true,
-      "value": "de_dust2"
-    },
-    "mapgroup": {
-      "type": "integer",
-      "desc": "(Advanced) Map group",
-      "display": "Map group",
-      "required": true,
-      "value": "mg_active"
-    },
-    "maxplayers": {
-      "type": "integer",
-      "desc": "Max players allowed on server",
-      "display": "Max Players",
-      "required": true,
-      "value": "20"
-    },
-    "port": {
-      "type": "integer",
-      "desc": "What port to bind the server to",
-      "display": "Port",
-      "required": true,
-      "value": "27015"
-    },
-    "tvport": {
-      "type": "integer",
-      "desc": "What port to bind the GOTV to",
-      "display": "GOTV Port",
-      "required": true,
-      "value": "27017"
-    }
-  },
-  "environment": {
-    "image": "steamcmd/steamcmd:ubuntu-20",
-    "type": "docker"
-  },
-  "supportedEnvironments": [
-    {
-      "image": "steamcmd/steamcmd:ubuntu-20",
-      "type": "docker"
-    }
-  ],
-  "requirements": {
-    "arch": "amd64"
-  }
+    "name": "cs2 docker2"
 }
