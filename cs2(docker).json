@@ -5,16 +5,16 @@
         "autoUpdate": {
             "type": "boolean",
             "value": true,
-            "display": "Aktualizovat při startu",
-            "desc": "Před každým startem spustí steamcmd app_update 730. Neaktuální server odmítá klienty.",
+            "display": "Update on start",
+            "desc": "Runs steamcmd app_update 730 before every start. An outdated server rejects clients.",
             "required": true,
             "userEdit": true
         },
         "defaultMap": {
             "type": "string",
             "value": "de_dust2",
-            "display": "Výchozí mapa",
-            "desc": "Mapa po startu, pokud není nastavena Workshop kolekce.",
+            "display": "Default map",
+            "desc": "Map loaded on start when no Workshop collection is set.",
             "required": true,
             "userEdit": true
         },
@@ -30,7 +30,7 @@
             "type": "integer",
             "value": 0,
             "display": "game_type",
-            "desc": "0 = Classic, 1 = Gun Game / Deathmatch, 3 = Custom (pravidla v game/csgo/cfg/gamemode_custom_server.cfg)",
+            "desc": "0 = Classic, 1 = Gun Game / Deathmatch, 3 = Custom (rules in game/csgo/cfg/gamemode_custom_server.cfg)",
             "required": true,
             "userEdit": true
         },
@@ -38,15 +38,15 @@
             "type": "string",
             "value": "",
             "display": "GSLT token",
-            "desc": "Game Server Login Token (steamcommunity.com/dev/managegameservers, App ID 730). Bez něj nebude server veřejně dostupný.",
+            "desc": "Game Server Login Token (steamcommunity.com/dev/managegameservers, App ID 730). Without it the server is not publicly reachable.",
             "required": false,
             "userEdit": true
         },
         "hostname": {
             "type": "string",
             "value": "PufferPanel CS2",
-            "display": "Název serveru",
-            "desc": "hostname zobrazený v prohlížeči serverů. Bez uvozovek.",
+            "display": "Server name",
+            "desc": "hostname shown in the server browser. No double quotes.",
             "required": true,
             "userEdit": true
         },
@@ -54,7 +54,7 @@
             "type": "string",
             "value": "0.0.0.0",
             "display": "IP",
-            "desc": "IP adresa hostitele, na které bude server poslouchat (Docker port binding). 0.0.0.0 = všechna rozhraní.",
+            "desc": "Host IP address the server listens on (Docker port binding). 0.0.0.0 = all interfaces.",
             "required": true,
             "userEdit": true
         },
@@ -62,14 +62,14 @@
             "type": "string",
             "value": "mg_active",
             "display": "Map group",
-            "desc": "+mapgroup, např. mg_active, mg_deathmatch, mg_armsrace. Výchozí mapa musí být v této skupině. Prázdné = nepoužít. Ignoruje se při Workshop kolekci.",
+            "desc": "+mapgroup, e.g. mg_active, mg_deathmatch, mg_armsrace. The default map must be part of this group. Empty = not used. Ignored when a Workshop collection is set.",
             "required": false,
             "userEdit": true
         },
         "maxPlayers": {
             "type": "integer",
             "value": 10,
-            "display": "Max hráčů",
+            "display": "Max players",
             "desc": "-maxplayers",
             "required": true,
             "userEdit": true
@@ -78,7 +78,7 @@
             "type": "boolean",
             "value": false,
             "display": "Metamod:Source",
-            "desc": "Při každém startu doplní do gameinfo.gi cestu csgo/addons/metamod. Metamod (a CounterStrikeSharp) nahraj do game/csgo/addons ručně.",
+            "desc": "Adds the csgo/addons/metamod path to gameinfo.gi on every start. Upload Metamod (and CounterStrikeSharp) to game/csgo/addons manually.",
             "required": true,
             "userEdit": true
         },
@@ -86,31 +86,31 @@
             "type": "integer",
             "value": 27015,
             "display": "Port",
-            "desc": "Herní port (UDP) a RCON (TCP).",
+            "desc": "Game port (UDP) and RCON (TCP).",
             "required": true,
             "userEdit": true
         },
         "rconPassword": {
             "type": "string",
             "value": "changeme",
-            "display": "Admin (RCON) heslo",
-            "desc": "rcon_password. CS2 nemá vestavěný admin účet, administrace jde přes RCON. Bez uvozovek.",
+            "display": "Admin (RCON) password",
+            "desc": "rcon_password. CS2 has no built-in admin account, administration is done via RCON. No double quotes.",
             "required": true,
             "userEdit": true
         },
         "serverPassword": {
             "type": "string",
             "value": "",
-            "display": "Heslo serveru",
-            "desc": "sv_password. Prázdné = bez hesla. Bez uvozovek.",
+            "display": "Server password",
+            "desc": "sv_password. Empty = no password. No double quotes.",
             "required": false,
             "userEdit": true
         },
         "workshopCollection": {
             "type": "string",
             "value": "",
-            "display": "Workshop kolekce",
-            "desc": "ID Steam Workshop kolekce map (host_workshop_collection). Když je vyplněno, ignoruje se Výchozí mapa.",
+            "display": "Workshop collection",
+            "desc": "Steam Workshop map collection ID (host_workshop_collection). When set, the default map is ignored.",
             "required": false,
             "userEdit": true
         }
@@ -145,7 +145,7 @@
             {
                 "type": "writefile",
                 "target": "cs2-start.sh",
-                "text": "#!/bin/bash\ncd /pufferpanel\nexport HOME=/pufferpanel\n# libserver.so (game/csgo/bin) potřebuje libv8*.so z game/bin -> obojí do cesty knihoven\nexport LD_LIBRARY_PATH=\"/pufferpanel/game/bin/linuxsteamrt64:/pufferpanel/game/csgo/bin/linuxsteamrt64:$LD_LIBRARY_PATH\"\n\n# steamclient.so musí být v ~/.steam/sdk64 (jinak \"Failed to load steamclient.so\")\n# Zdroj: Steamworks SDK Redist (app 1007) v perzistentním /pufferpanel/steamworks\nSDK=/pufferpanel/.steam/sdk64\nSW=/pufferpanel/steamworks/linux64/steamclient.so\nif [ ! -f \"$SW\" ]; then\n  echo \"[pufferpanel] Stahuji Steamworks SDK Redist (app 1007)...\"\n  steamcmd +force_install_dir /pufferpanel/steamworks +login anonymous +app_update 1007 +quit\nfi\nif [ -f \"$SW\" ]; then\n  [ -L \"$SDK\" ] && rm -f \"$SDK\"\n  mkdir -p \"$SDK\"\n  cp -f \"$SW\" \"$SDK/steamclient.so\"\nelse\n  echo \"[pufferpanel] CHYBA: $SW chybi, server se nespusti\"\nfi\n\n# Metamod: update hry gameinfo.gi přepisuje, proto se patchuje při každém startu\nGI=/pufferpanel/game/csgo/gameinfo.gi\nif [ \"${metamod}\" = \"true\" ] && [ -f \"$GI\" ] && ! grep -q 'csgo/addons/metamod' \"$GI\"; then\n  sed -i 's|^\\(\\s*\\)Game_LowViolence\\(\\s*\\)csgo_lv.*$|&\\n\\1Game\\2csgo/addons/metamod|' \"$GI\"\nfi\n\n# server.cfg se spouští při každém načtení mapy -> na konec přidat exec našeho cfg\nCFG=/pufferpanel/game/csgo/cfg/server.cfg\ntouch \"$CFG\"\ngrep -q '^exec pufferpanel' \"$CFG\" || printf '\\nexec pufferpanel\\n' >> \"$CFG\"\n\nset -- -dedicated -usercon -port ${port} -maxplayers ${maxPlayers} +game_type ${gameType} +game_mode ${gameMode} +exec pufferpanel.cfg\nif [ -n \"${gslt}\" ]; then\n  set -- \"$@\" +sv_setsteamaccount \"${gslt}\"\nfi\nif [ -n \"${workshopCollection}\" ]; then\n  set -- \"$@\" +host_workshop_collection \"${workshopCollection}\"\nelse\n  if [ -n \"${mapGroup}\" ]; then\n    set -- \"$@\" +mapgroup \"${mapGroup}\"\n  fi\n  set -- \"$@\" +map \"${defaultMap}\"\nfi\n\nexec ./game/bin/linuxsteamrt64/cs2 \"$@\"\n"
+                "text": "#!/bin/bash\ncd /pufferpanel\nexport HOME=/pufferpanel\n# libserver.so (game/csgo/bin) needs libv8*.so from game/bin -> add both to the library path\nexport LD_LIBRARY_PATH=\"/pufferpanel/game/bin/linuxsteamrt64:/pufferpanel/game/csgo/bin/linuxsteamrt64:$LD_LIBRARY_PATH\"\n\n# steamclient.so must be in ~/.steam/sdk64 (otherwise \"Failed to load steamclient.so\")\n# Source: Steamworks SDK Redist (app 1007) in persistent /pufferpanel/steamworks\nSDK=/pufferpanel/.steam/sdk64\nSW=/pufferpanel/steamworks/linux64/steamclient.so\nif [ ! -f \"$SW\" ]; then\n  echo \"[pufferpanel] Downloading Steamworks SDK Redist (app 1007)...\"\n  steamcmd +force_install_dir /pufferpanel/steamworks +login anonymous +app_update 1007 +quit\nfi\nif [ -f \"$SW\" ]; then\n  [ -L \"$SDK\" ] && rm -f \"$SDK\"\n  mkdir -p \"$SDK\"\n  cp -f \"$SW\" \"$SDK/steamclient.so\"\nelse\n  echo \"[pufferpanel] ERROR: $SW is missing, the server will not start\"\nfi\n\n# Metamod: game updates overwrite gameinfo.gi, so it is patched on every start\nGI=/pufferpanel/game/csgo/gameinfo.gi\nif [ \"${metamod}\" = \"true\" ] && [ -f \"$GI\" ] && ! grep -q 'csgo/addons/metamod' \"$GI\"; then\n  sed -i 's|^\\(\\s*\\)Game_LowViolence\\(\\s*\\)csgo_lv.*$|&\\n\\1Game\\2csgo/addons/metamod|' \"$GI\"\nfi\n\n# server.cfg runs on every map load -> append an exec of our cfg\nCFG=/pufferpanel/game/csgo/cfg/server.cfg\ntouch \"$CFG\"\ngrep -q '^exec pufferpanel' \"$CFG\" || printf '\\nexec pufferpanel\\n' >> \"$CFG\"\n\nset -- -dedicated -usercon -port ${port} -maxplayers ${maxPlayers} +game_type ${gameType} +game_mode ${gameMode} +exec pufferpanel.cfg\nif [ -n \"${gslt}\" ]; then\n  set -- \"$@\" +sv_setsteamaccount \"${gslt}\"\nfi\nif [ -n \"${workshopCollection}\" ]; then\n  set -- \"$@\" +host_workshop_collection \"${workshopCollection}\"\nelse\n  if [ -n \"${mapGroup}\" ]; then\n    set -- \"$@\" +mapgroup \"${mapGroup}\"\n  fi\n  set -- \"$@\" +map \"${defaultMap}\"\nfi\n\nexec ./game/bin/linuxsteamrt64/cs2 \"$@\"\n"
             }
         ],
         "stdin": {
@@ -157,20 +157,20 @@
     },
     "environment": {
         "type": "docker",
-        "image": "steamcmd/steamcmd",
         "portBindings": [
             "${ip}:${port}:${port}/udp",
             "${ip}:${port}:${port}/tcp"
-        ]
+        ],
+        "image": "steamcmd/steamcmd"
     },
     "supportedEnvironments": [
         {
             "type": "docker",
-            "image": "steamcmd/steamcmd",
             "portBindings": [
                 "${ip}:${port}:${port}/udp",
                 "${ip}:${port}:${port}/tcp"
-            ]
+            ],
+            "image": "steamcmd/steamcmd"
         }
     ],
     "requirements": {
