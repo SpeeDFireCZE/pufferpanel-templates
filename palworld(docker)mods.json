@@ -1,0 +1,221 @@
+{
+    "type": "palworld",
+    "display": "Palworld moded (Docker, Wine)",
+    "data": {
+        "adminPassword": {
+            "type": "string",
+            "value": "changeme",
+            "display": "Admin password",
+            "desc": "AdminPassword - /AdminPassword <password> in chat; also used for RCON and the REST API. No double quotes.",
+            "required": true,
+            "userEdit": true
+        },
+        "autoUpdate": {
+            "type": "boolean",
+            "value": true,
+            "display": "Update on start",
+            "desc": "Runs steamcmd app_update 2394010 before every start.",
+            "required": true,
+            "userEdit": true
+        },
+        "maxPlayers": {
+            "type": "integer",
+            "value": 32,
+            "display": "Max players",
+            "desc": "-players and ServerPlayerMaxNum (max 32).",
+            "required": true,
+            "userEdit": true
+        },
+        "perfThreads": {
+            "type": "boolean",
+            "value": false,
+            "display": "Multithreading arguments",
+            "desc": "-useperfthreads -NoAsyncLoadingThread -UseMultithreadForDS. The official docs note that leaving them unset may perform better since v1.0.",
+            "required": true,
+            "userEdit": true
+        },
+        "port": {
+            "type": "integer",
+            "value": 8211,
+            "display": "Game port (UDP)",
+            "desc": "Game port (-port, PublicPort).",
+            "required": true,
+            "userEdit": true
+        },
+        "publicLobby": {
+            "type": "boolean",
+            "value": false,
+            "display": "Community server",
+            "desc": "-publiclobby: list the server in the in-game community server browser.",
+            "required": true,
+            "userEdit": true
+        },
+        "rconEnabled": {
+            "type": "boolean",
+            "value": false,
+            "display": "RCON",
+            "desc": "RCONEnabled.",
+            "required": true,
+            "userEdit": true
+        },
+        "rconPort": {
+            "type": "integer",
+            "value": 25575,
+            "display": "RCON port (TCP)",
+            "desc": "RCONPort.",
+            "required": true,
+            "userEdit": true
+        },
+        "restApiEnabled": {
+            "type": "boolean",
+            "value": true,
+            "display": "REST API",
+            "desc": "RESTAPIEnabled. Used by the stop handler to save and shut down cleanly. Do not expose this port to the internet.",
+            "required": true,
+            "userEdit": true
+        },
+        "restApiPort": {
+            "type": "integer",
+            "value": 8212,
+            "display": "REST API port (TCP)",
+            "desc": "RESTAPIPort.",
+            "required": true,
+            "userEdit": true
+        },
+        "serverDescription": {
+            "type": "string",
+            "value": "",
+            "display": "Server description",
+            "desc": "ServerDescription. No double quotes.",
+            "required": false,
+            "userEdit": true
+        },
+        "serverName": {
+            "type": "string",
+            "value": "PufferPanel Palworld",
+            "display": "Server name",
+            "desc": "ServerName. No double quotes.",
+            "required": true,
+            "userEdit": true
+        },
+        "serverPassword": {
+            "type": "string",
+            "value": "",
+            "display": "Server password",
+            "desc": "ServerPassword. Empty = no password. No double quotes.",
+            "required": false,
+            "userEdit": true
+        },
+        "steamUser": {
+            "type": "string",
+            "value": "",
+            "display": "Steam user for Workshop",
+            "desc": "Steam account that owns Palworld (anonymous Workshop downloads are refused). Log in once interactively, the cached session is reused; no password is stored in the panel.",
+            "required": false,
+            "userEdit": true
+        },
+        "workshopIds": {
+            "type": "string",
+            "value": "",
+            "display": "Workshop mod IDs",
+            "desc": "Comma-separated Steam Workshop IDs (Palworld, app 1623730). Synced into Mods/Workshop and enabled in Mods/PalModSettings.ini on every start. Empty = Mods/ is left untouched.",
+            "required": false,
+            "userEdit": true
+        }
+    },
+    "install": [
+        {
+            "type": "writefile",
+            "text": "#!/bin/bash\n# Download/update the Windows build of the Palworld dedicated server (app 2394010)\n# using Linux steamcmd stored in /pufferpanel/steamcmd\nset -e\nexport HOME=/pufferpanel\nSC=/pufferpanel/steamcmd\nif [ ! -x \"$SC/steamcmd.sh\" ]; then\n  echo \"[pufferpanel] Installing steamcmd...\"\n  mkdir -p \"$SC\"\n  curl -fsSL https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz | tar -xz -C \"$SC\"\nfi\n\"$SC/steamcmd.sh\" +@sSteamCmdForcePlatformType windows +force_install_dir /pufferpanel +login anonymous +app_update 2394010 \"$@\" +quit\n",
+            "target": "pal-steam.sh"
+        },
+        {
+            "type": "writefile",
+            "text": "#!/bin/bash\n# One-time setup of the Wine prefix in persistent /pufferpanel/.wine\nexport HOME=/pufferpanel\nexport WINEPREFIX=/pufferpanel/.wine WINEARCH=win64 WINEDEBUG=-all WINEDLLOVERRIDES=\"mscoree,mshtml=\"\nrm -f /tmp/.X99-lock\nXvfb :99 -screen 0 1024x768x16 -nolisten tcp >/dev/null 2>&1 &\nXPID=$!\nexport DISPLAY=:99\nsleep 2\necho \"[pufferpanel] Initializing Wine prefix...\"\nwineboot --init\nwineserver -w\necho \"[pufferpanel] Installing Visual C++ 2015-2022 runtime (winetricks vcrun2022)...\"\nwinetricks -q vcrun2022 || echo \"[pufferpanel] WARNING: failed to install vcrun2022\"\nwineserver -w\nkill $XPID 2>/dev/null\nexit 0\n",
+            "target": "pal-wine.sh"
+        },
+        {
+            "type": "command",
+            "commands": [
+                "bash /pufferpanel/pal-steam.sh validate",
+                "bash /pufferpanel/pal-wine.sh"
+            ]
+        }
+    ],
+    "uninstall": null,
+    "run": {
+        "command": "bash /pufferpanel/pal-start.sh",
+        "stopCode": 2,
+        "pre": [
+            {
+                "if": "autoUpdate",
+                "type": "command",
+                "commands": [
+                    "bash /pufferpanel/pal-steam.sh"
+                ]
+            },
+            {
+                "type": "writefile",
+                "text": "#!/bin/bash\n# Sync Steam Workshop mods (Palworld app 1623730) into Mods/Workshop and build Mods/PalModSettings.ini.\n# Workshop downloads need a Steam account that owns Palworld (anonymous login is refused).\n# The account must be logged in once interactively; steamcmd then reuses the cached session.\nexport HOME=/pufferpanel\nIDS=\"${workshopIds}\"\nSTEAMUSER=\"${steamUser}\"\nSC=/pufferpanel/steamcmd/steamcmd.sh\nWS=/pufferpanel/Mods/Workshop\nDL=/pufferpanel/workshop-cache\nCONTENT=$DL/steamapps/workshop/content/1623730\nINI=/pufferpanel/Mods/PalModSettings.ini\n\nif [ -z \"$IDS\" ]; then\n  echo \"[pufferpanel] No Workshop IDs set, leaving Mods/ untouched\"\n  exit 0\nfi\n\nID_LIST=$(echo \"$IDS\" | tr ',; ' '\\n\\n\\n' | grep -E '^[0-9]+$')\n\nif [ -z \"$STEAMUSER\" ]; then\n  echo \"[pufferpanel] WARNING: Workshop IDs set but no Steam user, skipping download (using cache only)\"\nelse\n  set --\n  for id in $ID_LIST; do\n    set -- \"$@\" +workshop_download_item 1623730 \"$id\"\n  done\n  echo \"[pufferpanel] Downloading Workshop items as $STEAMUSER...\"\n  # stdin from /dev/null: if no cached session exists steamcmd fails instead of waiting for a password\n  if ! timeout 900 \"$SC\" +@sSteamCmdForcePlatformType windows +force_install_dir \"$DL\" +login \"$STEAMUSER\" \"$@\" +quit < /dev/null; then\n    echo \"[pufferpanel] WARNING: Workshop download failed (no cached login? see template README). Using cache.\"\n  fi\nfi\n\n# Replace the folders this script manages, keep anything you put into Mods/Workshop yourself\nmkdir -p \"$WS\"\nfor d in \"$WS\"/*; do\n  [ -f \"$d/.pufferpanel-workshop\" ] && rm -rf \"$d\"\ndone\nfor id in $ID_LIST; do\n  if [ -d \"$CONTENT/$id\" ]; then\n    cp -a \"$CONTENT/$id\" \"$WS/$id\"\n    touch \"$WS/$id/.pufferpanel-workshop\"\n  else\n    echo \"[pufferpanel] WARNING: Workshop item $id is not downloaded\"\n  fi\ndone\n\n# Every folder in Mods/Workshop with an Info.json gets enabled by its PackageName\npython3 - \"$WS\" \"$INI\" <<'PYEOF'\nimport glob, json, os, sys\nws, ini = sys.argv[1], sys.argv[2]\npkgs = []\nfor info in sorted(glob.glob(os.path.join(ws, '*', 'Info.json'))):\n    try:\n        with open(info, encoding='utf-8-sig') as f:\n            data = json.load(f)\n    except Exception as e:\n        print('[pufferpanel] WARNING: cannot read ' + info + ': ' + str(e))\n        continue\n    pkg = data.get('PackageName')\n    if not pkg:\n        print('[pufferpanel] WARNING: no PackageName in ' + info)\n        continue\n    rules = data.get('InstallRule') or []\n    if isinstance(rules, dict):\n        rules = [rules]\n    if rules and not any(isinstance(r, dict) and r.get('IsServer') for r in rules):\n        print('[pufferpanel] WARNING: ' + pkg + ' is not marked IsServer=true, it may be client-only')\n    pkgs.append(pkg)\nlines = ['[PalModSettings]', 'bGlobalEnableMod=' + ('true' if pkgs else 'false')]\nlines += ['ActiveModList=' + p for p in pkgs]\nos.makedirs(os.path.dirname(ini), exist_ok=True)\nwith open(ini, 'w', encoding='utf-8', newline='\\r\\n') as f:\n    f.write('\\n'.join(lines) + '\\n')\nprint('[pufferpanel] Active mods: ' + (', '.join(pkgs) if pkgs else 'none'))\nPYEOF\nexit 0\n",
+                "target": "pal-workshop.sh"
+            },
+            {
+                "type": "command",
+                "commands": [
+                    "bash /pufferpanel/pal-workshop.sh"
+                ]
+            },
+            {
+                "type": "writefile",
+                "target": "pal-values.txt",
+                "text": "ServerName\t\"${serverName}\"\nServerDescription\t\"${serverDescription}\"\nAdminPassword\t\"${adminPassword}\"\nServerPassword\t\"${serverPassword}\"\nServerPlayerMaxNum\t${maxPlayers}\nPublicPort\t${port}\nRCONEnabled\t${rconEnabled}\nRCONPort\t${rconPort}\nRESTAPIEnabled\t${restApiEnabled}\nRESTAPIPort\t${restApiPort}\n"
+            },
+            {
+                "type": "writefile",
+                "target": "pal-start.sh",
+                "text": "#!/bin/bash\ncd /pufferpanel\nexport HOME=/pufferpanel\n# dwmapi=n,b lets a UE4SS proxy dwmapi.dll (if a mod deploys one) load instead of Wine's builtin\nexport WINEPREFIX=/pufferpanel/.wine WINEARCH=win64 WINEDEBUG=-all WINEDLLOVERRIDES=\"mscoree,mshtml=;dwmapi=n,b\"\n\n# Virtual display for Wine\nrm -f /tmp/.X99-lock\nXvfb :99 -screen 0 1024x768x16 -nolisten tcp >/dev/null 2>&1 &\nexport DISPLAY=:99\nsleep 2\n\nif [ ! -d \"$WINEPREFIX\" ]; then\n  echo \"[pufferpanel] Wine prefix missing, initializing...\"\n  wineboot --init\n  wineserver -w\nfi\n\n# PalWorldSettings.ini: start from the developer default when missing or empty\nINI=/pufferpanel/Pal/Saved/Config/WindowsServer/PalWorldSettings.ini\nmkdir -p \"$(dirname \"$INI\")\"\nif ! grep -q '^OptionSettings=(' \"$INI\" 2>/dev/null; then\n  cp -f /pufferpanel/DefaultPalWorldSettings.ini \"$INI\"\nfi\n\n# Overwrite only the keys listed in pal-values.txt (KEY<TAB>VALUE); everything else is kept\nawk -v vals=/pufferpanel/pal-values.txt '\nBEGIN {\n  while ((getline l < vals) > 0) {\n    t = index(l, \"\\t\")\n    if (t > 0) {\n      n++; keys[n] = substr(l, 1, t - 1); v = substr(l, t + 1)\n      if (v == \"true\") v = \"True\"; if (v == \"false\") v = \"False\"\n      val[keys[n]] = v\n    }\n  }\n}\n/^OptionSettings=\\(/ {\n  for (i = 1; i <= n; i++) {\n    k = keys[i]; s = $0\n    p = index(s, \",\" k \"=\"); if (p == 0) p = index(s, \"(\" k \"=\")\n    if (p == 0) {\n      q = length(s); while (q > 0 && substr(s, q, 1) != \")\") q--\n      $0 = substr(s, 1, q - 1) \",\" k \"=\" val[k] substr(s, q)\n      continue\n    }\n    st = p + length(k) + 2\n    rest = substr(s, st)\n    if (substr(rest, 1, 1) == \"\\\"\") {\n      vl = index(substr(rest, 2), \"\\\"\") + 1\n    } else {\n      e1 = index(rest, \",\"); e2 = index(rest, \")\")\n      if (e1 == 0 || (e2 > 0 && e2 < e1)) e1 = e2\n      vl = e1 - 1\n    }\n    $0 = substr(s, 1, st - 1) val[k] substr(rest, vl + 1)\n  }\n}\n{ print }' \"$INI\" > \"$INI.tmp\" && mv -f \"$INI.tmp\" \"$INI\"\n\nset -- -port=${port} -players=${maxPlayers}\nif [ \"${publicLobby}\" = \"true\" ]; then\n  set -- \"$@\" -publiclobby\nfi\nif [ \"${perfThreads}\" = \"true\" ]; then\n  set -- \"$@\" -useperfthreads -NoAsyncLoadingThread -UseMultithreadForDS\nfi\n\n# This script runs as PID 1 in the container, which ignores signals without a handler.\n# On stop: save + shut down through the REST API when enabled, otherwise forward SIGINT;\n# kill Wine if the server is still running after the timeout.\nstop_server() {\n  echo \"[pufferpanel] Stopping server...\"\n  if [ \"${restApiEnabled}\" = \"true\" ]; then\n    curl -s -m 10 -u \"admin:${adminPassword}\" -X POST \"http://127.0.0.1:${restApiPort}/v1/api/save\" >/dev/null \\\n      && echo \"[pufferpanel] World saved via REST API\"\n    curl -s -m 10 -u \"admin:${adminPassword}\" -X POST -H \"Content-Type: application/json\" \\\n      -d '{\"waittime\": 1, \"message\": \"Server is shutting down\"}' \\\n      \"http://127.0.0.1:${restApiPort}/v1/api/shutdown\" >/dev/null\n  else\n    kill -INT \"$WPID\" 2>/dev/null\n  fi\n  for i in $(seq 1 60); do\n    kill -0 \"$WPID\" 2>/dev/null || break\n    sleep 1\n  done\n  if kill -0 \"$WPID\" 2>/dev/null; then\n    echo \"[pufferpanel] Server did not exit in 60 s, killing Wine\"\n  fi\n  wineserver -k 2>/dev/null\n}\ntrap stop_server INT TERM\n\n# Job control on: without it bash starts background jobs with SIGINT ignored\nset -m\nwine ./PalServer.exe \"$@\" <&0 &\nWPID=$!\nwait \"$WPID\"\nwait \"$WPID\" 2>/dev/null\nwineserver -k 2>/dev/null\nexit 0\n"
+            }
+        ],
+        "stdin": {
+            "type": "stdin"
+        },
+        "autostart": false,
+        "autorecover": false,
+        "autorestart": false
+    },
+    "environment": {
+        "type": "docker",
+        "portBindings": [
+            "0.0.0.0:${port}:${port}/udp",
+            "0.0.0.0:${rconPort}:${rconPort}/tcp",
+            "0.0.0.0:${restApiPort}:${restApiPort}/tcp"
+        ],
+        "image": "ghcr.io/ptero-eggs/yolks:wine_latest"
+    },
+    "supportedEnvironments": [
+        {
+            "type": "docker",
+            "image": "ghcr.io/ptero-eggs/yolks:wine_latest",
+            "portBindings": [
+                "0.0.0.0:${port}:${port}/udp",
+                "0.0.0.0:${rconPort}:${rconPort}/tcp",
+                "0.0.0.0:${restApiPort}:${restApiPort}/tcp"
+            ]
+        }
+    ],
+    "requirements": {
+        "os": "linux",
+        "arch": "amd64"
+    },
+    "stats": {
+        "type": ""
+    },
+    "query": {
+        "type": ""
+    },
+    "keepAlive": {
+        "frequency": "",
+        "command": ""
+    },
+    "name": "palworld docker moded"
+}
