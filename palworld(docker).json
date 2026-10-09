@@ -1,98 +1,185 @@
 {
-  "name": "Pal world Docker",
-  "display": "Pal world Docker",
-  "type": "game",
-  "install": [
-    {
-      "commands": [
-        "steamcmd +force_install_dir /pufferpanel +login anonymous +app_update 1007 +quit"
-      ],
-      "type": "command"
+    "type": "palworld",
+    "display": "Palworld (Docker2)",
+    "data": {
+        "adminPassword": {
+            "type": "string",
+            "value": "changeme",
+            "display": "Admin password",
+            "desc": "AdminPassword - /AdminPassword <password> in chat; also used for RCON and the REST API. No double quotes.",
+            "required": true,
+            "userEdit": true
+        },
+        "autoUpdate": {
+            "type": "boolean",
+            "value": true,
+            "display": "Update on start",
+            "desc": "Runs steamcmd app_update 2394010 before every start.",
+            "required": true,
+            "userEdit": true
+        },
+        "maxPlayers": {
+            "type": "integer",
+            "value": 32,
+            "display": "Max players",
+            "desc": "-players and ServerPlayerMaxNum (max 32).",
+            "required": true,
+            "userEdit": true
+        },
+        "perfThreads": {
+            "type": "boolean",
+            "value": false,
+            "display": "Multithreading arguments",
+            "desc": "-useperfthreads -NoAsyncLoadingThread -UseMultithreadForDS. The official docs note that leaving them unset may perform better since v1.0.",
+            "required": true,
+            "userEdit": true
+        },
+        "port": {
+            "type": "integer",
+            "value": 8211,
+            "display": "Port (UDP)",
+            "desc": "Game port (-port, PublicPort).",
+            "required": true,
+            "userEdit": true
+        },
+        "publicLobby": {
+            "type": "boolean",
+            "value": false,
+            "display": "Community server",
+            "desc": "-publiclobby: list the server in the in-game community server browser.",
+            "required": true,
+            "userEdit": true
+        },
+        "rconEnabled": {
+            "type": "boolean",
+            "value": false,
+            "display": "RCON",
+            "desc": "RCONEnabled.",
+            "required": true,
+            "userEdit": true
+        },
+        "rconPort": {
+            "type": "integer",
+            "value": 25575,
+            "display": "RCON port (TCP)",
+            "desc": "RCONPort.",
+            "required": true,
+            "userEdit": true
+        },
+        "restApiEnabled": {
+            "type": "boolean",
+            "value": false,
+            "display": "REST API",
+            "desc": "RESTAPIEnabled - HTTP API (Basic auth: admin / admin password).",
+            "required": true,
+            "userEdit": true
+        },
+        "restApiPort": {
+            "type": "integer",
+            "value": 8212,
+            "display": "REST API port (TCP)",
+            "desc": "RESTAPIPort.",
+            "required": true,
+            "userEdit": true
+        },
+        "serverDescription": {
+            "type": "string",
+            "value": "",
+            "display": "Server description",
+            "desc": "ServerDescription. No double quotes.",
+            "required": false,
+            "userEdit": true
+        },
+        "serverName": {
+            "type": "string",
+            "value": "PufferPanel Palworld",
+            "display": "Server name",
+            "desc": "ServerName. No double quotes.",
+            "required": true,
+            "userEdit": true
+        },
+        "serverPassword": {
+            "type": "string",
+            "value": "",
+            "display": "Server password",
+            "desc": "ServerPassword. Empty = no password. No double quotes.",
+            "required": false,
+            "userEdit": true
+        }
     },
-    {
-      "target": "./.steam/sdk64/",
-      "type": "mkdir"
-    },
-    {
-      "source": "./linux64/steamclient.so",
-      "target": "./.steam/sdk64/",
-      "type": "move"
-    },
-    {
-      "commands": [
-        "steamcmd +force_install_dir /pufferpanel +login anonymous +app_update 2394010 validate +quit"
-      ],
-      "type": "command"
-    },
-    {
-      "target": "/Pal/Saved",
-      "type": "mkdir"
-    },
-    {
-      "target": "/Pal/Saved/Config",
-      "type": "mkdir"
-    },
-    {
-      "target": "/Pal/Saved/Config/LinuxServer",
-      "type": "mkdir"
-    },
-    {
-      "target": "/Pal/Saved/Config/LinuxServer/PalWorldSettings.ini",
-      "text": "[/Script/Pal.PalGameWorldSettings]\nOptionSettings=(Difficulty=None,DayTimeSpeedRate=1.000000,NightTimeSpeedRate=1.000000,ExpRate=2.000000,PalCaptureRate=1.000000,PalSpawnNumRate=1.300000,PalDamageRateAttack=1.000000,PalDamageRateDefense=1.000000,PlayerDamageRateAttack=1.000000,PlayerDamageRateDefense=1.000000,PlayerStomachDecreaceRate=1.000000,PlayerStaminaDecreaceRate=1.000000,PlayerAutoHPRegeneRate=1.000000,PlayerAutoHpRegeneRateInSleep=1.000000,PalStomachDecreaceRate=1.000000,PalStaminaDecreaceRate=1.000000,PalAutoHPRegeneRate=1.000000,PalAutoHpRegeneRateInSleep=1.000000,BuildObjectDamageRate=1.000000,BuildObjectDeteriorationDamageRate=1.000000,CollectionDropRate=1.000000,CollectionObjectHpRate=1.000000,CollectionObjectRespawnSpeedRate=1.000000,EnemyDropItemRate=1.000000,DeathPenalty=All,bEnablePlayerToPlayerDamage=False,bEnableFriendlyFire=False,bEnableInvaderEnemy=True,bActiveUNKO=False,bEnableAimAssistPad=True,bEnableAimAssistKeyboard=False,DropItemMaxNum=3000,DropItemMaxNum_UNKO=100,BaseCampMaxNum=128,BaseCampWorkerMaxNum=15,DropItemAliveMaxHours=1.000000,bAutoResetGuildNoOnlinePlayers=False,AutoResetGuildTimeNoOnlinePlayers=72.000000,GuildPlayerMaxNum=20,PalEggDefaultHatchingTime=5.000000,WorkSpeedRate=1.000000,bIsMultiplay=False,bIsPvP=False,bCanPickupOtherGuildDeathPenaltyDrop=False,bEnableNonLoginPenalty=True,bEnableFastTravel=True,bIsStartLocationSelectByMap=True,bExistPlayerAfterLogout=False,bEnableDefenseOtherGuildPlayer=False,CoopPlayerMaxNum=4,ServerPlayerMaxNum=32,ServerName=${name},ServerDescription=\"\",AdminPassword=${adminpass},ServerPassword=${serverpass},PublicPort=8211,PublicIP=\"\",RCONEnabled=False,RCONPort=25575,Region=\"\",bUseAuth=True,BanListURL=\"https://api.palworldgame.com/api/banlist.txt\")",
-      "type": "writefile"
-    }
-  ],
-  "run": {
-    "stop": "shutdown",
-    "command": "./PalServer.sh",
-    "workingDirectory": "",
-    "pre": [
-      {
-        "target": "/Pal/Saved/Config/LinuxServer/PalWorldSettings.ini",
-        "text": "[/Script/Pal.PalGameWorldSettings]\nOptionSettings=(Difficulty=None,DayTimeSpeedRate=1.000000,NightTimeSpeedRate=1.000000,ExpRate=2.000000,PalCaptureRate=1.000000,PalSpawnNumRate=1.300000,PalDamageRateAttack=1.000000,PalDamageRateDefense=1.000000,PlayerDamageRateAttack=1.000000,PlayerDamageRateDefense=1.000000,PlayerStomachDecreaceRate=1.000000,PlayerStaminaDecreaceRate=1.000000,PlayerAutoHPRegeneRate=1.000000,PlayerAutoHpRegeneRateInSleep=1.000000,PalStomachDecreaceRate=1.000000,PalStaminaDecreaceRate=1.000000,PalAutoHPRegeneRate=1.000000,PalAutoHpRegeneRateInSleep=1.000000,BuildObjectDamageRate=1.000000,BuildObjectDeteriorationDamageRate=1.000000,CollectionDropRate=1.000000,CollectionObjectHpRate=1.000000,CollectionObjectRespawnSpeedRate=1.000000,EnemyDropItemRate=1.000000,DeathPenalty=All,bEnablePlayerToPlayerDamage=False,bEnableFriendlyFire=False,bEnableInvaderEnemy=True,bActiveUNKO=False,bEnableAimAssistPad=True,bEnableAimAssistKeyboard=False,DropItemMaxNum=3000,DropItemMaxNum_UNKO=100,BaseCampMaxNum=128,BaseCampWorkerMaxNum=15,DropItemAliveMaxHours=1.000000,bAutoResetGuildNoOnlinePlayers=False,AutoResetGuildTimeNoOnlinePlayers=72.000000,GuildPlayerMaxNum=20,PalEggDefaultHatchingTime=5.000000,WorkSpeedRate=1.000000,bIsMultiplay=False,bIsPvP=False,bCanPickupOtherGuildDeathPenaltyDrop=False,bEnableNonLoginPenalty=True,bEnableFastTravel=True,bIsStartLocationSelectByMap=True,bExistPlayerAfterLogout=False,bEnableDefenseOtherGuildPlayer=False,CoopPlayerMaxNum=4,ServerPlayerMaxNum=32,ServerName=${name},ServerDescription=\"\",AdminPassword=${adminpass},ServerPassword=${serverpass},PublicPort=8211,PublicIP=\"\",RCONEnabled=False,RCONPort=25575,Region=\"\",bUseAuth=True,BanListURL=\"https://api.palworldgame.com/api/banlist.txt\")",
-        "type": "writefile"
-      }
+    "install": [
+        {
+            "type": "command",
+            "commands": [
+                "steamcmd +force_install_dir /pufferpanel +login anonymous +app_update 2394010 validate +quit",
+                "steamcmd +force_install_dir /pufferpanel/steamworks +login anonymous +app_update 1007 +quit"
+            ]
+        }
     ],
-    "post": [],
-    "environmentVars": {}
-  },
-  "data": {
-    "adminpass": {
-      "type": "string",
-      "desc": "Administrator pass",
-      "display": "adminpass",
-      "required": true
+    "uninstall": null,
+    "run": {
+        "command": "bash /pufferpanel/pal-start.sh",
+        "stopCode": 2,
+        "pre": [
+            {
+                "if": "autoUpdate",
+                "type": "command",
+                "commands": [
+                    "steamcmd +force_install_dir /pufferpanel +login anonymous +app_update 2394010 +quit",
+                    "steamcmd +force_install_dir /pufferpanel/steamworks +login anonymous +app_update 1007 +quit"
+                ]
+            },
+            {
+                "type": "writefile",
+                "target": "pal-values.txt",
+                "text": "ServerName\t\"${serverName}\"\nServerDescription\t\"${serverDescription}\"\nAdminPassword\t\"${adminPassword}\"\nServerPassword\t\"${serverPassword}\"\nServerPlayerMaxNum\t${maxPlayers}\nPublicPort\t${port}\nRCONEnabled\t${rconEnabled}\nRCONPort\t${rconPort}\nRESTAPIEnabled\t${restApiEnabled}\nRESTAPIPort\t${restApiPort}\n"
+            },
+            {
+                "type": "writefile",
+                "text": "#!/bin/bash\ncd /pufferpanel\nexport HOME=/pufferpanel\n\n# steamclient.so must be in ~/.steam/sdk64 (Steamworks SDK Redist, app 1007)\nSDK=/pufferpanel/.steam/sdk64\nSW=/pufferpanel/steamworks/linux64/steamclient.so\nif [ ! -f \"$SW\" ]; then\n  echo \"[pufferpanel] Downloading Steamworks SDK Redist (app 1007)...\"\n  steamcmd +force_install_dir /pufferpanel/steamworks +login anonymous +app_update 1007 +quit\nfi\nif [ -f \"$SW\" ]; then\n  [ -L \"$SDK\" ] && rm -f \"$SDK\"\n  mkdir -p \"$SDK\"\n  cp -f \"$SW\" \"$SDK/steamclient.so\"\nelse\n  echo \"[pufferpanel] ERROR: $SW is missing, the server will not start\"\nfi\n\n# PalWorldSettings.ini: start from the developer default when missing or empty\nINI=/pufferpanel/Pal/Saved/Config/LinuxServer/PalWorldSettings.ini\nmkdir -p \"$(dirname \"$INI\")\"\nif ! grep -q '^OptionSettings=(' \"$INI\" 2>/dev/null; then\n  cp -f /pufferpanel/DefaultPalWorldSettings.ini \"$INI\"\nfi\n\n# Overwrite only the keys listed in pal-values.txt (KEY<TAB>VALUE); everything else is kept\nawk -v vals=/pufferpanel/pal-values.txt '\nBEGIN {\n  while ((getline l < vals) > 0) {\n    t = index(l, \"\\t\")\n    if (t > 0) {\n      n++; keys[n] = substr(l, 1, t - 1); v = substr(l, t + 1)\n      if (v == \"true\") v = \"True\"; if (v == \"false\") v = \"False\"\n      val[keys[n]] = v\n    }\n  }\n}\n/^OptionSettings=\\(/ {\n  for (i = 1; i <= n; i++) {\n    k = keys[i]; s = $0\n    p = index(s, \",\" k \"=\"); if (p == 0) p = index(s, \"(\" k \"=\")\n    if (p == 0) {\n      q = length(s); while (q > 0 && substr(s, q, 1) != \")\") q--\n      $0 = substr(s, 1, q - 1) \",\" k \"=\" val[k] substr(s, q)\n      continue\n    }\n    st = p + length(k) + 2\n    rest = substr(s, st)\n    if (substr(rest, 1, 1) == \"\\\"\") {\n      vl = index(substr(rest, 2), \"\\\"\") + 1\n    } else {\n      e1 = index(rest, \",\"); e2 = index(rest, \")\")\n      if (e1 == 0 || (e2 > 0 && e2 < e1)) e1 = e2\n      vl = e1 - 1\n    }\n    $0 = substr(s, 1, st - 1) val[k] substr(rest, vl + 1)\n  }\n}\n{ print }' \"$INI\" > \"$INI.tmp\" && mv -f \"$INI.tmp\" \"$INI\"\n\nset -- -port=${port} -players=${maxPlayers}\nif [ \"${publicLobby}\" = \"true\" ]; then\n  set -- \"$@\" -publiclobby\nfi\nif [ \"${perfThreads}\" = \"true\" ]; then\n  set -- \"$@\" -useperfthreads -NoAsyncLoadingThread -UseMultithreadForDS\nfi\n\n# Run the binary directly (PalServer.sh does not exec it, so the stop signal would not be forwarded)\nBIN=/pufferpanel/Pal/Binaries/Linux/PalServer-Linux-Shipping\n[ -f \"$BIN\" ] || BIN=/pufferpanel/Pal/Binaries/Linux/PalServer-Linux-Test\nchmod +x \"$BIN\"\nexec \"$BIN\" Pal \"$@\"\n",
+                "target": "pal-start.sh"
+            }
+        ],
+        "stdin": {
+            "type": "stdin"
+        },
+        "autostart": false,
+        "autorecover": false,
+        "autorestart": false
     },
-    "name": {
-      "type": "string",
-      "desc": "Server Name",
-      "display": "name",
-      "required": true
+    "environment": {
+        "type": "docker",
+        "image": "steamcmd/steamcmd",
+        "portBindings": [
+            "0.0.0.0:${port}:${port}/udp",
+            "0.0.0.0:${rconPort}:${rconPort}/tcp",
+            "0.0.0.0:${restApiPort}:${restApiPort}/tcp"
+        ]
     },
-    "serverpass": {
-      "type": "string",
-      "desc": "Server pass",
-      "display": "serverpass",
-      "required": true
-    }
-  },
-  "environment": {
-    "bindings": {},
-    "image": "steamcmd/steamcmd",
-    "networkMode": "host",
-    "networkName": "",
-    "portBindings": [],
-    "type": "docker"
-  },
-  "supportedEnvironments": [
-    {
-      "bindings": {},
-      "image": "steamcmd/steamcmd",
-      "networkMode": "host",
-      "networkName": "",
-      "portBindings": [],
-      "type": "docker"
-    }
-  ],
-  "requirements": {}
+    "supportedEnvironments": [
+        {
+            "type": "docker",
+            "image": "steamcmd/steamcmd",
+            "portBindings": [
+                "0.0.0.0:${port}:${port}/udp",
+                "0.0.0.0:${rconPort}:${rconPort}/tcp",
+                "0.0.0.0:${restApiPort}:${restApiPort}/tcp"
+            ]
+        }
+    ],
+    "requirements": {
+        "os": "linux",
+        "arch": "amd64"
+    },
+    "stats": {
+        "type": ""
+    },
+    "query": {
+        "type": ""
+    },
+    "keepAlive": {
+        "frequency": "",
+        "command": ""
+    },
+    "name": "palworld docker"
 }
