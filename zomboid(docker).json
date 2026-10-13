@@ -5,24 +5,50 @@
         "adminPassword": {
             "type": "string",
             "value": "changeme",
-            "display": "Admin heslo",
-            "desc": "Heslo účtu admin. Uplatní se jen při prvním vytvoření databáze serveru. Bez mezer.",
+            "display": "Admin password",
+            "desc": "Password of the admin account. Only applied when the server database is created for the first time. No spaces.",
             "required": true,
             "userEdit": true
         },
         "memory": {
             "type": "integer",
             "value": 4096,
-            "display": "Paměť (MB)",
+            "display": "Memory (MB)",
             "desc": "Java heap (-Xmx).",
             "required": true,
             "userEdit": true
         },
+        "modFormat": {
+            "type": "string",
+            "value": "42",
+            "display": "Game build",
+            "desc": "Mods= format: Build 42 prefixes every Mod ID with a backslash, Build 41 does not.",
+            "required": true,
+            "userEdit": true,
+            "options": [
+                {
+                    "value": "42",
+                    "display": "Build 42"
+                },
+                {
+                    "value": "41",
+                    "display": "Build 41"
+                }
+            ]
+        },
         "mods": {
             "type": "string",
             "value": "",
-            "display": "Mod ID",
-            "desc": "Mod ID oddělená středníkem, např. ModA;ModB (řádek Mods= v .ini).",
+            "display": "Mod IDs (manual)",
+            "desc": "Leave empty to build Mods= automatically from the mod.info files of the Workshop items. Fill in (separated by ;) to set the Mod IDs and load order yourself.",
+            "required": false,
+            "userEdit": true
+        },
+        "modsExclude": {
+            "type": "string",
+            "value": "",
+            "display": "Excluded Mod IDs",
+            "desc": "Mod IDs separated by ; that are skipped in automatic mode, e.g. optional variants shipped in the same Workshop item.",
             "required": false,
             "userEdit": true
         },
@@ -30,23 +56,23 @@
             "type": "integer",
             "value": 16261,
             "display": "Port (UDP)",
-            "desc": "Hlavní herní port (DefaultPort), UDP.",
+            "desc": "Main game port (DefaultPort), UDP.",
             "required": true,
             "userEdit": true
         },
         "serverName": {
             "type": "string",
             "value": "pufferserver",
-            "display": "Název serveru",
-            "desc": "Interní název serveru (název .ini a savu). Bez mezer.",
+            "display": "Server name",
+            "desc": "Internal server name (name of the .ini and the save). No spaces.",
             "required": true,
             "userEdit": true
         },
         "serverPassword": {
             "type": "string",
             "value": "",
-            "display": "Heslo serveru",
-            "desc": "Heslo pro připojení hráčů. Prázdné = bez hesla.",
+            "display": "Server password",
+            "desc": "Password players need to join. Empty = no password.",
             "required": false,
             "userEdit": true
         },
@@ -54,7 +80,7 @@
             "type": "boolean",
             "value": true,
             "display": "Steam VAC",
-            "desc": "Zapnout/vypnout Steam VAC.",
+            "desc": "Enable/disable Steam VAC.",
             "required": true,
             "userEdit": true
         },
@@ -62,15 +88,15 @@
             "type": "integer",
             "value": 16262,
             "display": "Direct connect port (UDP)",
-            "desc": "Druhý port (UDPPort), obvykle port + 1.",
+            "desc": "Second port (UDPPort), usually port + 1.",
             "required": true,
             "userEdit": true
         },
         "workshopItems": {
             "type": "string",
             "value": "",
-            "display": "Workshop ID",
-            "desc": "Číselná Steam Workshop ID oddělená středníkem, např. 2169435993;2392709985 (řádek WorkshopItems= v .ini).",
+            "display": "Workshop IDs",
+            "desc": "Numeric Steam Workshop IDs separated by ; or , (e.g. 2169435993;2392709985). Written to WorkshopItems=; the server downloads them on start.",
             "required": false,
             "userEdit": true
         }
@@ -84,18 +110,13 @@
         },
         {
             "type": "writefile",
-            "text": "{ \"mainClass\": \"zombie/network/GameServer\", \"classpath\": [ \"java/.\", \"java/projectzomboid.jar\" ], \"vmArgs\": [ \"-Djava.awt.headless=true\", \"-Xmx${memory}M\", \"-Dzomboid.steam=1\", \"-Dzomboid.znetlog=1\", \"-Djava.library.path=linux64/\", \"-Djava.security.egd=file:/dev/urandom\", \"-XX:+UseZGC\", \"-XX:-OmitStackTraceInFastThrow\"] }",
-            "target": "ProjectZomboid64.json"
-        },
-        {
-            "type": "writefile",
-            "text": "#!/bin/bash\nset -e\nINI=\"/pufferpanel/Zomboid/Server/$1.ini\"\nmkdir -p \"$(dirname \"$INI\")\"\ntouch \"$INI\"\ngrep -vE '^(Password|Mods|WorkshopItems)=' \"$INI\" > \"$INI.tmp\" || true\ncat /pufferpanel/pz-overrides.txt >> \"$INI.tmp\"\nmv \"$INI.tmp\" \"$INI\"\n",
-            "target": "pz-merge.sh"
+            "target": "ProjectZomboid64.json",
+            "text": "{ \"mainClass\": \"zombie/network/GameServer\", \"classpath\": [ \"java/.\", \"java/projectzomboid.jar\" ], \"vmArgs\": [ \"-Djava.awt.headless=true\", \"-Xmx${memory}M\", \"-Dzomboid.steam=1\", \"-Dzomboid.znetlog=1\", \"-Djava.library.path=linux64/\", \"-Djava.security.egd=file:/dev/urandom\", \"-XX:+UseZGC\", \"-XX:-OmitStackTraceInFastThrow\"] }"
         },
         {
             "type": "command",
             "commands": [
-                "chmod +x start-server.sh pz-merge.sh"
+                "chmod +x start-server.sh"
             ]
         }
     ],
@@ -106,8 +127,13 @@
         "pre": [
             {
                 "type": "writefile",
-                "target": "pz-overrides.txt",
-                "text": "Password=${serverPassword}\nMods=${mods}\nWorkshopItems=${workshopItems}\n"
+                "text": "Password=${serverPassword}\nMods=${mods}\nWorkshopItems=${workshopItems}\nModsExclude=${modsExclude}\nModFormat=${modFormat}\n",
+                "target": "pz-overrides.txt"
+            },
+            {
+                "type": "writefile",
+                "text": "#!/bin/bash\n# Merge panel values into Zomboid/Server/<servername>.ini (Password=, WorkshopItems=, Mods=).\n# Mods= is built automatically from the mod.info files of the downloaded Workshop items,\n# unless Mod IDs are set manually in the panel. Every other line in the ini is kept.\nNAME=\"$1\"\nROOT=/pufferpanel\nINI=\"$ROOT/Zomboid/Server/$NAME.ini\"\nOVR=\"$ROOT/pz-overrides.txt\"\n\nget() { grep -m1 \"^$1=\" \"$OVR\" | cut -d= -f2- | tr -d '\\r'; }\nsplit() { tr ',; ' '\\n\\n\\n' | sed 's/^\\\\*//' | grep -v '^$'; }\n\nPASSWORD=$(get Password)\nMANUAL=$(get Mods)\nFORMAT=$(get ModFormat)\nEXCLUDE=$(get ModsExclude | split)\nITEMS=$(get WorkshopItems | tr ',; ' '\\n\\n\\n' | grep -E '^[0-9]+$')\n\n# Where the server downloads Workshop items (<install>/steamapps/workshop/content/108600)\nCONTENT=$(find \"$ROOT\" -maxdepth 6 -type d -path '*/workshop/content/108600' 2>/dev/null | head -n1)\n\nMOD_IDS=\"\"\nREQS=\"\"\nMAPS=\"\"\nMISSING=0\nif [ -n \"$MANUAL\" ]; then\n  MOD_IDS=$(printf '%s\\n' \"$MANUAL\" | split)\n  echo \"[pufferpanel] Using manually set Mod IDs\"\nelse\n  for item in $ITEMS; do\n    dir=\"$CONTENT/$item/mods\"\n    if [ -z \"$CONTENT\" ] || [ ! -d \"$dir\" ]; then\n      MISSING=$((MISSING + 1))\n      continue\n    fi\n    for mod in \"$dir\"/*/; do\n      [ -d \"$mod\" ] || continue\n      # B41: <mod>/mod.info, B42: <mod>/42*/mod.info or <mod>/common/mod.info\n      info=$(find \"$mod\" -maxdepth 2 -name mod.info 2>/dev/null | sort | head -n1)\n      [ -n \"$info\" ] || continue\n      id=$(grep -m1 '^[[:space:]]*id[[:space:]]*=' \"$info\" | cut -d= -f2- | tr -d '\\r' \\\n        | sed 's/^[[:space:]]*//;s/[[:space:]]*$//;s/^\\\\*//')\n      [ -n \"$id\" ] || continue\n      if printf '%s\\n' \"$EXCLUDE\" | grep -qxF \"$id\"; then\n        echo \"[pufferpanel] Skipping excluded mod $id\"\n        continue\n      fi\n      printf '%s\\n' \"$MOD_IDS\" | grep -qxF \"$id\" && continue\n      MOD_IDS=$(printf '%s\\n%s' \"$MOD_IDS\" \"$id\")\n      req=$(grep -m1 '^[[:space:]]*require[[:space:]]*=' \"$info\" | cut -d= -f2- | tr -d '\\r' | split | paste -sd' ')\n      REQS=$(printf '%s\\n%s\\t%s' \"$REQS\" \"$id\" \"$req\")\n      for m in \"$mod\"media/maps/*/ \"$mod\"*/media/maps/*/; do\n        [ -d \"$m\" ] && MAPS=\"$MAPS $(basename \"$m\")\"\n      done\n    done\n  done\nfi\nMOD_IDS=$(printf '%s\\n' \"$MOD_IDS\" | grep -v '^$')\n\n# Load order: Workshop order, but a mod is moved after the mods it lists in require=\nif [ -z \"$MANUAL\" ] && [ -n \"$MOD_IDS\" ]; then\n  MOD_IDS=$(printf '%s\\n' \"$REQS\" | awk -F'\\t' -v ids=\"$MOD_IDS\" '\n    BEGIN { n = split(ids, order, \"\\n\"); for (i = 1; i <= n; i++) present[order[i]] = 1 }\n    NF >= 1 && $1 != \"\" { req[$1] = $2 }\n    END {\n      # Repeatedly take the first mod (in Workshop order) whose requirements are already placed\n      while (1) {\n        found = 0\n        for (i = 1; i <= n; i++) {\n          m = order[i]; if (m == \"\" || done[m]) continue\n          ok = 1; k = split(req[m], r, \" \")\n          for (j = 1; j <= k; j++) if (present[r[j]] && !done[r[j]]) ok = 0\n          if (ok) { print m; done[m] = 1; found = 1; break }\n        }\n        if (!found) break\n      }\n      # Whatever is left has a dependency cycle: keep Workshop order\n      for (i = 1; i <= n; i++) if (order[i] != \"\" && !done[order[i]]) print order[i]\n    }')\nfi\n\n# Build 42 expects a backslash before every Mod ID, Build 41 must not have it\nif [ \"$FORMAT\" = \"41\" ]; then\n  MODS_LINE=$(printf '%s\\n' \"$MOD_IDS\" | paste -sd';')\nelse\n  MODS_LINE=$(printf '%s\\n' \"$MOD_IDS\" | sed '/^$/d;s/^/\\\\/' | paste -sd';')\nfi\nITEMS_LINE=$(printf '%s\\n' \"$ITEMS\" | paste -sd';')\n\nmkdir -p \"$(dirname \"$INI\")\"\ntouch \"$INI\"\ngrep -vE '^(Password|Mods|WorkshopItems)=' \"$INI\" > \"$INI.tmp\" || true\n{\n  printf 'Password=%s\\n' \"$PASSWORD\"\n  printf 'Mods=%s\\n' \"$MODS_LINE\"\n  printf 'WorkshopItems=%s\\n' \"$ITEMS_LINE\"\n} >> \"$INI.tmp\"\nmv -f \"$INI.tmp\" \"$INI\"\n\necho \"[pufferpanel] Mods=$MODS_LINE\"\nif [ \"$MISSING\" -gt 0 ]; then\n  echo \"[pufferpanel] $MISSING Workshop item(s) not downloaded yet. The server downloads them now;\"\n  echo \"[pufferpanel] restart once afterwards so their mods are added to Mods=.\"\nfi\nif [ -n \"$MAPS\" ]; then\n  echo \"[pufferpanel] Map mods detected:$MAPS\"\n  echo \"[pufferpanel] Add them to Map= in $NAME.ini (before Muldraugh, KY) if they should be loaded.\"\nfi\nexit 0\n",
+                "target": "pz-merge.sh"
             },
             {
                 "type": "command",
